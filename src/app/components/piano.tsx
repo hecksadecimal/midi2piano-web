@@ -11,7 +11,7 @@ export async function Piano(props: { piano: string | null, piano_name: string | 
                     <h3 id="piano_title" className="justify-center min-w-0 mb-4 text-2xl font-bold dark:text-white">
                         { piano_name }
                     </h3>
-                <code id="piano" className="whitespace-pre-line min-w-0 bg-gray-900 p-4 rounded-lg">
+                <code id="piano" className="whitespace-pre-line min-w-0 bg-gray-200 dark:text-white dark:bg-gray-900 p-4 rounded-lg">
                     { piano }
                 </code>
             </div>
