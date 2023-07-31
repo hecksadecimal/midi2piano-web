@@ -19,6 +19,10 @@ export function MIDIUploadForm() {
       return
     }
 
+    if (!piano_element.innerText) {
+      return
+    }
+
     var data = window.URL.createObjectURL(new Blob([piano_element.innerText], {type: "text/plain"}));
     var title = piano_title_element.innerText.split('.').slice(0,-1)
     title.push("txt")
@@ -98,10 +102,10 @@ export function MIDIUploadForm() {
         <button type="submit" className='flex-1 grow text-white w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800'>
           {isLoading ? 'Processing...' : midiName ? "Upload  " + midiName : "Upload"}
         </button>
-        <button type="button" onClick={copyToClipboard} className='flex-1 grow text-white w-full focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800'>
+        <button type="button" disabled={!downloadFilename} onClick={copyToClipboard} className='disabled:bg-gray-500 disabled:hover:bg-gray-500 flex-1 grow text-white w-full focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800'>
           Copy To Clipboard
         </button>
-        <a id="download_link" type="button" className='flex-1 grow w-full focus:outline-none text-white text-center bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:focus:ring-orange-900' href={downloadData} download={downloadFilename}>
+        <a id="download_link" type="button" className={`flex-1 grow w-full focus:outline-none text-white text-center ${downloadFilename ? "bg-orange-400 hover:bg-orange-500" : "bg-gray-500 hover:bg-gray-500"} focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:focus:ring-orange-900`} href={downloadData ? downloadData : undefined} download={downloadFilename}>
           Download
         </a>
       </div>
