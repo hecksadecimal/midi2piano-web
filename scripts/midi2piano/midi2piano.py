@@ -4,12 +4,7 @@ for copy-and-paste
 """
 from functools import reduce
 import MidiDependencies as mi
-import tkinter as tk
-from tkinter import filedialog
-from tkinter import messagebox
 import sys
-root = tk.Tk()
-root.withdraw()
 
 LINE_LENGTH_LIM = 50
 LINES_LIMIT = 200
@@ -293,31 +288,6 @@ def finalize_sheet_music(split_music, most_frequent_dur):
     sheet_music = "BPM: " + str(int(60000 / most_frequent_dur)) + END_OF_LINE_CHAR + sheet_music
     return sheet_music[:min(len(sheet_music), OVERALL_IMPORT_LIM)]
 # END OF CONVERSION FUNCTIONS
-
-def main_cycle():
-    """
-    Activate the script
-    """
-    while True:
-        midi_file = obtain_midi_file()
-        if not midi_file:
-            return # Cancel
-        score = midi2score_without_ticks(midi_file)
-        score = filter_events_from_score(score)
-        score = filter_start_time_and_note_num(score)
-        score = filter_empty_tracks(score)
-        score = merge_events(score)
-        score = sort_score_by_event_times(score)
-        score = convert_into_seconds_per_ticks(score)
-        score = perform_roundation(score)
-        most_frequent_dur = obtain_common_duration(score)
-        score = reduce_score_to_chords(score)
-        sheet_music = obtain_sheet_music(score, most_frequent_dur)
-        split_music = explode_sheet_music(sheet_music)
-        sheet_music = finalize_sheet_music(split_music, most_frequent_dur)
-
-        root.clipboard_append(sheet_music)
-
 
 def script_run():
     """
