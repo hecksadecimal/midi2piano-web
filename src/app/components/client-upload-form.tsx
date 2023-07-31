@@ -1,19 +1,38 @@
 'use client'
-import React, { ChangeEvent, FormEvent, useState } from 'react';
+import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useRouter } from "next/navigation";
 
 export function MIDIUploadForm() {
   const [midi, setMidi] = useState<File>();
   const [midiName, setMidiName] = useState('');
+  const [downloadFilename, setDownloadFilename] = useState('');
+  const [downloadData, setDownloadData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    var download_element = document.getElementById("download_link");
+    var piano_element = document.getElementById("piano");
+    var piano_title_element = document.getElementById("piano_title");
+
+    if (!download_element || !piano_element || !piano_title_element) {
+      return
+    }
+
+    var data = window.URL.createObjectURL(new Blob([piano_element.innerText], {type: "text/plain"}));
+    var title = piano_title_element.innerText.split('.').slice(0,-1)
+    title.push("txt")
+    var title_final = title.join(".")
+
+    setDownloadFilename(title_final)
+    setDownloadData(data)
+  }, [])
   
   const copyToClipboard = async () => {
     var piano_element = document.getElementById("piano");
     if (!piano_element) {
       return
     }
-
     navigator.clipboard.writeText(piano_element.innerText)
   }
 
@@ -52,6 +71,14 @@ export function MIDIUploadForm() {
       piano_element.innerText = piano_result["piano"];
       piano_title_element.innerText = piano_result["piano_title"];
       piano_container.classList.remove("hidden");
+
+      var data = window.URL.createObjectURL(new Blob([piano_element.innerText], {type: "text/plain"}));
+      var title = piano_title_element.innerText.split('.').slice(0,-1)
+      title.push("txt")
+      var title_final = title.join(".")
+
+      setDownloadFilename(title_final)
+      setDownloadData(data)
     }
   };
 
@@ -74,6 +101,9 @@ export function MIDIUploadForm() {
         <button type="button" onClick={copyToClipboard} className='flex-1 grow text-white w-full focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800'>
           Copy To Clipboard
         </button>
+        <a id="download_link" type="button" className='flex-1 grow w-full focus:outline-none text-white text-center bg-orange-400 hover:bg-orange-500 focus:ring-4 focus:ring-orange-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:focus:ring-orange-900' href={downloadData} download={downloadFilename}>
+          Download
+        </a>
       </div>
     </form>
   )
