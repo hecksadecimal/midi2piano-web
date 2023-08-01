@@ -15,7 +15,10 @@ export async function POST (req: NextRequest, res: NextResponse) {
     var piano_data = await convertMidi(formData)
     var piano_title = file.name
 
-    cookies().set('latest_conv', JSON.stringify({data: piano_data, title: piano_title}))
+    var cookie_value = JSON.stringify({data: piano_data, title: piano_title})
+    if (cookie_value.length < 4096) {
+        cookies().set('latest_conv', cookie_value)
+    }
 
     var response = NextResponse.json({piano: piano_data, piano_title: piano_title}, { status: 200 })
     return response
