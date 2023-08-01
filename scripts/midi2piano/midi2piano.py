@@ -5,10 +5,19 @@ for copy-and-paste
 from functools import reduce
 import MidiDependencies as mi
 import sys
+import argparse
+
+parser = argparse.ArgumentParser(
+                    prog='midi2piano',
+                    description='Converts MIDIs to ss13 instrument format')
+parser.add_argument('-l', '--limit', type=int, default=200)
+parser.add_argument('-t', '--ticklag', type=float, default=0.5)
+
+args = parser.parse_args()
 
 LINE_LENGTH_LIM = 50
-LINES_LIMIT = 200
-TICK_LAG = 0.5
+LINES_LIMIT = args.limit
+TICK_LAG = args.ticklag
 OVERALL_IMPORT_LIM = 2*LINE_LENGTH_LIM*LINES_LIMIT
 END_OF_LINE_CHAR = """
 """ # BYOND can't parse \n and I am forced to define my own NEWLINE char
@@ -20,6 +29,10 @@ OCTAVE_KEYS = 12
 HIGHEST_OCTAVE = 8
 
 time_quanta = 100 * TICK_LAG
+
+
+
+
 """
 class Meta():
     version = 1.0

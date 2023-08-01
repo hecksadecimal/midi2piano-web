@@ -55,6 +55,9 @@ export function MIDIUploadForm() {
   const [midiTracks, setMidiTracks] = useState<Array<TrackInfo>>();
   const [downloadFilename, setDownloadFilename] = useState('');
   const [downloadData, setDownloadData] = useState('');
+  const [tickLag, setTickLag] = useState(50);
+  const [lineLimit, setLineLimit] = useState(200);
+
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
@@ -97,6 +100,14 @@ export function MIDIUploadForm() {
     } else {
       setDisabledTracks(disabledTracks => [...disabledTracks ?? [], parseInt(event.target.id.replace("track_", ""))])
     }
+  }
+
+  const handleTickRateChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTickLag(parseInt(event.target.value))
+  }
+
+  const handleLineLimitChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLineLimit(parseInt(event.target.value))
   }
 
   const handleChange = async (file: File) => {
@@ -152,6 +163,9 @@ export function MIDIUploadForm() {
     } else {
       fd.append('file', midi, midiName);
     }
+
+    fd.append('tick_lag', (tickLag / 100).toString());
+    fd.append('line_limit', lineLimit.toString())
 
     const response = await fetch("/api/midi", {
       method: "post",
@@ -209,9 +223,16 @@ export function MIDIUploadForm() {
           Download
         </a>
       </div>
+      <input type="hidden" name="tick_lag" value={tickLag / 100}/>
+      <input type="hidden" name="line_limit" value={lineLimit}/>
     </form>
     { midiTracks &&
-    <div>
+    <div className='flex flex-col space-y-4'>
+      <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Parameters</h3>
+      <label htmlFor="steps-range" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tick Lag: {tickLag / 100}</label>
+      <input id="steps-range" type="range" min="0" max="100" value={tickLag} onChange={handleTickRateChange} step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></input>
+      <label htmlFor="steps-range" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Max Lines: {lineLimit}</label>
+      <input id="steps-range" type="range" min="5" max="5000" value={lineLimit} onChange={handleLineLimitChange} step="5" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"></input>
       <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Tracks</h3>
       <ul className="w-48 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
         { midiTracks?.map(track => (
