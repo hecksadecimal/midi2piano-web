@@ -2,12 +2,57 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
 import { useRouter } from "next/navigation";
+import { IMidiFile } from 'midi-json-parser-worker';
+import { parseArrayBuffer } from 'midi-json-parser';
+import { encode } from 'json-midi-encoder';
+import { bankToInstrument, percussionPrograms } from '@/app/helpers/midi';
 
 const fileTypes = ["MID", "MIDI"];
+type TrackInfo = [number, number, string];
+
+
+// Given a Midi Object, will identify the instrument tracks and their indexes.
+function trackParser(midiObject: IMidiFile) {
+  var trackInfo: Array<TrackInfo> = []
+  for (const track in midiObject.tracks) {
+    var trackName = ""
+    var programName = ""
+    var programBank = -1
+    var identifiedTrack: TrackInfo | undefined
+
+    for (const event in midiObject.tracks[parseInt(track)]) {
+      var eventData = midiObject.tracks[parseInt(track)][parseInt(event)]
+      if (eventData.noteOn && programName == "") {
+        //Special case for tracks which do not define a program, but still play notes
+        programName = bankToInstrument[1] // Acoustic Grand Piano
+        programBank = 1
+      }
+      if (eventData.programChange) {
+        //@ts-expect-error
+        programName = bankToInstrument[eventData.programChange.programNumber + 1]
+        //@ts-expect-error
+        programBank = eventData.programChange.programNumber + 1
+      }
+      if (eventData.trackName) {
+        trackName = eventData.trackName.toString()
+      }
+    }
+    if (trackName != "" || programName != "") {
+      var finalName = trackName + (programName != "" ? ` (${programName})` : "")
+      identifiedTrack = [parseInt(track), programBank, finalName]
+      trackInfo.push(identifiedTrack)
+    }
+  }
+  return trackInfo
+}
 
 export function MIDIUploadForm() {
   const [midi, setMidi] = useState<File>();
   const [midiName, setMidiName] = useState('');
+  const [midiObject, setMidiObject] = useState<IMidiFile>();
+  const [editedMidiObject, setEditedMidiObject] = useState<IMidiFile>();
+  const [disabledTracks, setDisabledTracks] = useState<Array<number>>();
+  const [midiTracks, setMidiTracks] = useState<Array<TrackInfo>>();
   const [downloadFilename, setDownloadFilename] = useState('');
   const [downloadData, setDownloadData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,16 +89,43 @@ export function MIDIUploadForm() {
     navigator.clipboard.writeText(piano_element.innerText)
   }
 
-  const onChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      setMidi(event.target.files[0]);
-      setMidiName(event.target.files[0].name);
+  const handleTrackCheckboxClick = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      setDisabledTracks(disabledTracks?.filter(function(item) {
+        return item !== parseInt(event.target.id.replace("track_", ""))
+      }))
+    } else {
+      setDisabledTracks(disabledTracks => [...disabledTracks ?? [], parseInt(event.target.id.replace("track_", ""))])
     }
   }
 
-  const handleChange = (file: File) => {
+  const handleChange = async (file: File) => {
     setMidi(file);
     setMidiName(file.name);
+    var obj = await parseArrayBuffer(await file.arrayBuffer());
+    if (obj) {
+      setMidiObject(obj);
+      var currentMidiTracks = trackParser(obj);
+      var currentDisabledTracks = []
+      setMidiTracks(currentMidiTracks);
+      for(const track in currentMidiTracks) {
+        if(percussionPrograms.includes(currentMidiTracks[parseInt(track)][1])) {
+          currentDisabledTracks.push(parseInt(track))
+        } 
+      }
+      setDisabledTracks(currentDisabledTracks);
+      var checkboxes = window.document.getElementsByClassName('trackCheckbox');
+      for(var item in checkboxes) {
+        var checkbox = checkboxes[parseInt(item)] as HTMLInputElement;
+        if (checkbox) {
+          if (currentDisabledTracks && currentDisabledTracks.includes(parseInt(checkbox.id.replace("track_", "")))) {
+            checkbox.checked = false;
+          } else {
+            checkbox.checked = true;
+          }
+        }
+      }
+    }
   };
 
   const onSubmit = async (event: FormEvent) => {
@@ -66,7 +138,20 @@ export function MIDIUploadForm() {
       return;
     }
 
-    fd.append('file', midi, midiName);
+    if (!midiObject) {
+      return;
+    }
+
+    var newMidiObject = { ...midiObject }
+    
+    if (disabledTracks && disabledTracks.length > 0 && midiObject) {
+      newMidiObject.tracks = midiObject.tracks.filter((_, index) => !disabledTracks.includes(index));
+      var midiBlob = new Blob([await encode(newMidiObject)])
+      var editedMidiFile = new File([midiBlob], midiName)
+      fd.append('file', editedMidiFile, midiName);
+    } else {
+      fd.append('file', midi, midiName);
+    }
 
     const response = await fetch("/api/midi", {
       method: "post",
@@ -96,6 +181,7 @@ export function MIDIUploadForm() {
   };
 
   return (
+    <>
     <form action="/api/midi" method="post" onSubmit={onSubmit}>
       <div className="flex flex-col w-64 space-y-8 items-center justify-center">
         <FileUploader 
@@ -124,5 +210,21 @@ export function MIDIUploadForm() {
         </a>
       </div>
     </form>
+    { midiTracks &&
+    <div>
+      <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">Tracks</h3>
+      <ul className="w-48 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        { midiTracks?.map(track => (
+          <li key={`track_${midiName}_${track[0].toString()}`} className="trackCheckbox w-full border-b border-gray-200 rounded-t-lg dark:border-gray-600">
+              <div className="flex items-center pl-3 pr-1">
+                  <input key={`track_${midiName}_${track[0].toString()}_checkbox`} id={`track_${track[0].toString()}`} type="checkbox" defaultChecked={true} onChange={handleTrackCheckboxClick} value="" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500" />
+                  <label id={`track_${track[0].toString()}`} className="w-full py-3 ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">{track[2]}</label>
+              </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+    }
+    </>
   )
 }

@@ -39,8 +39,11 @@ def condition(event):
     """
     This function check if given MIDI event is meaningful
     """
-    if event[0] == 'track_name' and event[2] == 'Drums': # Percussion
-        return False
+    
+    # Removed here because we can disable percussion ourselves in the web interface.
+    #if event[0] == 'track_name' and event[2] == 'Drums': # Percussion
+    #    return False
+    
     if event[0] == 'note': # Only thing that matters
         return True
     return False
