@@ -2,7 +2,6 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Requirements
 
-Python 3
 Node 18+
 
 ## Getting Started
@@ -27,7 +26,3 @@ To learn more about Next.js, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Acknowledgements
-
-midi2piano modified from [/tg/station (c03800e)](https://github.com/tgstation/tgstation/tree/c03800e93f0f24399bd58935f61cc0bbc5bec71e/tools/midi2piano)
